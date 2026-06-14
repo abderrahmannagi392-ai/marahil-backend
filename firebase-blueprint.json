@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user spiritual progress and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "tasbihCount": { "type": "integer" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "tasbihCount"]
+    },
+    "Notification": {
+      "title": "System Notification",
+      "description": "Messages sent by administrators to users",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "type": { "type": "string", "enum": ["global", "personal"] },
+        "targetUserId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "senderId": { "type": "string" }
+      },
+      "required": ["title", "body", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "System-wide and targeted notifications"
+    }
+  }
+}

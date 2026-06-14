@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap');
+
+@theme {
+  --font-sans: "Arimo", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: #725c00;
+  --color-primary-container: #ffe081;
+  --color-on-primary-container: #564500;
+  --color-surface-background: #f3fceb;
+  --color-surface-variant: #dce5d5;
+  --color-on-surface: #161e13;
+  --color-on-surface-variant: #3c4b37;
+  --color-tertiary: #3e6836;
+  --color-tertiary-container: #bef0b0;
+
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-background text-on-surface font-sans;
+    direction: rtl;
+  }
+}
+
+.markdown-body {
+  @apply leading-relaxed;
+}

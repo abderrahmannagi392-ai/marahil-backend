@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'abdarrahmannagi@gmail.com' && request.auth.token.email_verified == true;
+    }
+
+    // Entity validation helpers
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'tasbihCount', 'updatedAt']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.tasbihCount is int && data.tasbihCount >= 0 &&
+             data.updatedAt == request.time &&
+             (data.get('displayName', '') is string && data.get('displayName', '').size() <= 100) &&
+             (data.get('email', '') is string && data.get('email', '').size() <= 256);
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['title', 'body', 'type', 'createdAt']) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.body is string && data.body.size() <= 1000 &&
+             data.type in ['global', 'personal'] &&
+             data.createdAt == request.time &&
+             (data.get('targetUserId', '') is string && data.get('targetUserId', '').size() <= 128) &&
+             (data.get('senderId', '') is string && data.get('senderId', '').size() <= 128);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isOwner(userId) && 
+                      isVerified() && 
+                      isValidId(userId) && 
+                      isValidUser(incoming()) &&
+                      incoming().userId == userId;
+
+      allow update: if isOwner(userId) &&
+                      isVerified() &&
+                      isValidUser(incoming()) &&
+                      incoming().userId == userId &&
+                      incoming().userId == existing().userId &&
+                      (
+                        // Action: Increment Tasbih or Update Profile
+                        incoming().diff(existing()).affectedKeys().hasAny(['tasbihCount', 'displayName', 'updatedAt']) &&
+                        incoming().diff(existing()).affectedKeys().hasOnly(['tasbihCount', 'displayName', 'updatedAt'])
+                      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow list: if isSignedIn() && (
+        resource.data.type == 'global' || 
+        resource.data.targetUserId == request.auth.uid ||
+        isAdmin()
+      );
+      allow get: if isSignedIn() && (
+        resource.data.type == 'global' || 
+        resource.data.targetUserId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAdmin() && isValidNotification(incoming());
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+  }
+}
